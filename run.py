@@ -2,7 +2,20 @@ import sqlite3
 import pandas as pd
 
 
-def run():
+def modify_data(country_population_df, fully_vacc_by_ico_code_max_df):
+    merged_tables = pd.merge(country_population_df, fully_vacc_by_ico_code_max_df, how='left', on=["iso_code", 'name']) \
+        .fillna(0) \
+        .rename(columns={'people_fully_vaccinated': 'total_vaccinated'})
+
+    # we are able to do it without lambda and without if/else statement
+    merged_tables['percentage_vaccinated'] = merged_tables.apply(
+        lambda x: ((x['total_vaccinated'] / x['population']) * 100) if x['total_vaccinated'] != 0 else 0, axis=1) \
+        .round(2)
+
+    return merged_tables
+
+
+def read_data():
     with open('data/country_populations.csv', newline='') as csv_country_pop_file:
         df = pd.read_csv(csv_country_pop_file, delimiter=',')
         country_population_needed_columns = ["Country Name", "Country Code", "2020"]
@@ -19,15 +32,12 @@ def run():
             .groupby(['name', 'iso_code'], as_index=False) \
             .agg(people_fully_vaccinated=('people_fully_vaccinated', 'max')).fillna(0)
 
-    merged_tables = pd.merge(country_population_df, fully_vacc_by_ico_code_max_df, how='left', on=["iso_code", 'name']) \
-        .fillna(0) \
-        .rename(columns={'people_fully_vaccinated': 'total_vaccinated'})
+    modified_data = modify_data(country_population_df, fully_vacc_by_ico_code_max_df)
 
-    # we are able to do it without lambda and without if/else statement
-    merged_tables['percentage_vaccinated'] = merged_tables.apply(
-        lambda x: ((x['total_vaccinated'] / x['population']) * 100) \
-            if x['total_vaccinated'] != 0 else 0, axis=1).round(2)
+    return modified_data
 
+
+def write_data(merged_tables):
     with sqlite3.connect('zadacha.db') as cnx:
         merged_tables.to_sql('temp_table', con=cnx, if_exists='replace', index=False)
 
@@ -63,5 +73,11 @@ def run():
             connection.execute(sql_drop_temp)
 
 
-if __name__ == '__run__':
+def run():
+    merged_tables = read_data()
+    write_data(merged_tables)
+    print('Successfully added!')
+
+
+if __name__ == '__main__':
     run()
