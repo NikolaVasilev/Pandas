@@ -1,0 +1,7 @@
+zadacha.db
+.venv
+tests
+.idea
+data
+test.sql
+identifier.sqlite
