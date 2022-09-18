@@ -5,3 +5,4 @@ tests
 data
 test.sql
 identifier.sqlite
+poetry.lock
