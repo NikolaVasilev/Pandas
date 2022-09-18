@@ -1,6 +1,9 @@
 import sqlite3
 import pandas as pd
 
+path_to_country_population = 'data/country_populations.csv'
+path_to_vaccinations = 'data/vaccinations.csv'
+
 
 def modify_data(country_population_df, fully_vacc_by_ico_code_max_df):
     merged_tables = pd.merge(country_population_df, fully_vacc_by_ico_code_max_df, how='left', on=["iso_code", 'name']) \
@@ -15,15 +18,15 @@ def modify_data(country_population_df, fully_vacc_by_ico_code_max_df):
     return merged_tables
 
 
-def read_data():
-    with open('data/country_populations.csv', newline='') as csv_country_pop_file:
+def read_data(country_population_csv, vaccinations_csv):
+    with open(country_population_csv, newline='') as csv_country_pop_file:
         df = pd.read_csv(csv_country_pop_file, delimiter=',')
         country_population_needed_columns = ["Country Name", "Country Code", "2020"]
 
         country_population_df = df.loc[~df['Country Code'].str.startswith('OWID_'), country_population_needed_columns] \
             .rename(columns={'Country Code': 'iso_code', 'Country Name': 'name', '2020': 'population'})
 
-    with open('data/vaccinations.csv', newline='') as csv_vacc_file:
+    with open(vaccinations_csv, newline='') as csv_vacc_file:
         df = pd.read_csv(csv_vacc_file, delimiter=',')
         vacc_needed_columns = ["location", "iso_code", "people_fully_vaccinated"]
 
@@ -74,9 +77,9 @@ def write_data(merged_tables):
 
 
 def run():
-    merged_tables = read_data()
+    merged_tables = read_data(path_to_country_population, path_to_vaccinations)
     write_data(merged_tables)
-    print('Successfully added!')
+    print('Successfully added data!')
 
 
 if __name__ == '__main__':
